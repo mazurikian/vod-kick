@@ -6,7 +6,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-CHANNEL = "vector"
+CHANNEL = "sektorlagg"
 KICK_API_URL = f"https://kick.com/api/v2/channels/{CHANNEL}/videos"
 WORKSPACE = Path(os.environ.get("WORKSPACE_DIR", "/mnt/workspace"))
 
