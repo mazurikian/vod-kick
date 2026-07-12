@@ -3,9 +3,6 @@ name: Download and Release
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 concurrency:
   group: vector-vod-release
   cancel-in-progress: false
@@ -39,15 +36,6 @@ jobs:
           FILE_SIZE="$(stat --format=%s "${FILE_NAME}")"
           echo "FILE_SIZE=$FILE_SIZE" >> "$GITHUB_ENV"
 
-      - name: Calculate MD5
-        if: env.HAS_VOD == 'true'
-        working-directory: ${{ env.VOD_DIR }}
-        run: |
-          FILE_MD5="$(md5sum "${FILE_NAME}" | head --bytes=32)"
-
-          echo "FILE_MD5=$FILE_MD5" >> "$GITHUB_ENV"
-          echo "${FILE_MD5}  ${FILE_NAME}" > "${FILE_NAME}.md5"
-
       - name: Split large file
         if: env.HAS_VOD == 'true'
         working-directory: ${{ env.VOD_DIR }}
@@ -74,4 +62,3 @@ jobs:
           body: |
             VOD ID: `${{ env.VOD_ID }}`
             Fecha: `${{ env.VOD_CREATED_AT }}`
-            MD5: `${{ env.FILE_MD5 }}`
