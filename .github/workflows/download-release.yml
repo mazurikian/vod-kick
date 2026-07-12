@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: vector-vod-release
+  group: sektor-vod-release
   cancel-in-progress: false
 
 jobs:
