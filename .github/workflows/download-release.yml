@@ -1,0 +1,77 @@
+name: Download and Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vector-vod-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Prepare environment
+        run: |
+          sudo mkdir -p /mnt/workspace
+          sudo chown "$USER:$USER" /mnt/workspace
+
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg p7zip-full
+
+      - name: Download oldest pending VOD
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKSPACE_DIR: /mnt/workspace
+        run: python download_vod.py
+
+      - name: Get file size
+        if: env.HAS_VOD == 'true'
+        working-directory: ${{ env.VOD_DIR }}
+        run: |
+          FILE_SIZE="$(stat --format=%s "${FILE_NAME}")"
+          echo "FILE_SIZE=$FILE_SIZE" >> "$GITHUB_ENV"
+
+      - name: Calculate MD5
+        if: env.HAS_VOD == 'true'
+        working-directory: ${{ env.VOD_DIR }}
+        run: |
+          FILE_MD5="$(md5sum "${FILE_NAME}" | head --bytes=32)"
+
+          echo "FILE_MD5=$FILE_MD5" >> "$GITHUB_ENV"
+          echo "${FILE_MD5}  ${FILE_NAME}" > "${FILE_NAME}.md5"
+
+      - name: Split large file
+        if: env.HAS_VOD == 'true'
+        working-directory: ${{ env.VOD_DIR }}
+        run: |
+          if [ "${FILE_SIZE}" -ge 2147483648 ]; then
+            7z a \
+              -mx=0 \
+              -v2147483647b \
+              "${FILE_NAME}.7z" \
+              "${FILE_NAME}"
+
+            rm -- "${FILE_NAME}"
+          fi
+
+      - name: GH Release
+        if: env.HAS_VOD == 'true'
+        uses: softprops/action-gh-release@v3.0.1
+        with:
+          files: ${{ env.VOD_DIR }}/*
+          fail_on_unmatched_files: true
+          overwrite_files: false
+          name: ${{ env.RELEASE_NAME }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          body: |
+            VOD ID: `${{ env.VOD_ID }}`
+            Fecha: `${{ env.VOD_CREATED_AT }}`
+            MD5: `${{ env.FILE_MD5 }}`
