@@ -3,10 +3,6 @@ name: Download and Release
 on:
   workflow_dispatch:
 
-concurrency:
-  group: sektor-vod-release
-  cancel-in-progress: false
-
 jobs:
   release:
     runs-on: ubuntu-latest
